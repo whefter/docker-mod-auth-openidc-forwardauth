@@ -1,0 +1,49 @@
+version: '3.8'
+
+networks:
+  app: {}
+
+services:
+  traefik:
+    image: traefik:v2.4
+    networks:
+      - app
+    command:
+      - "--log.level=DEBUG"
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--providers.docker.constraints=Label(`traefik.tags`,`core`)"
+      - "--entrypoints.web.address=:80"
+    ports:
+      - 80:80
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+
+  httpd:
+    image: brndnmtthws/nginx-echo-headers
+    networks:
+      - app
+    labels:
+      traefik.enable: 'true'
+      traefik.tags: core
+      traefik.docker.network: modauthopenidctest_app
+      traefik.http.routers.httpd.rule: Host(`localhost`)
+      traefik.http.routers.httpd.entrypoints: web
+      traefik.http.routers.httpd.service: httpd
+      traefik.http.services.httpd.loadbalancer.server.port: '8080'
+      traefik.http.middlewares.httpd_forwardauth.forwardauth.address: http://forwardauth:80/
+      traefik.http.middlewares.httpd_forwardauth.forwardauth.authResponseHeadersRegex: '^(Oidc|X-)'
+      traefik.http.routers.httpd.middlewares: httpd_forwardauth
+
+  forwardauth:
+    build:
+      context: ./
+    image: apache2-mod-auth-openidc-test
+    networks:
+      - app
+    environment:
+      OIDC_PROVIDER_METADATA_URL: "${OIDC_PROVIDER_METADATA_URL}"
+      OIDC_CLIENT_ID: "${OIDC_CLIENT_ID}"
+      OIDC_CLIENT_SECRET: "${OIDC_CLIENT_SECRET}"
+      OIDC_CRYPTO_PASSPHRASE: "${OIDC_CRYPTO_PASSPHRASE}"
+      OIDC_REQUIRE_CLAIM: "${OIDC_REQUIRE_CLAIM}"
