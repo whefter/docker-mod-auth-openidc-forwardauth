@@ -1,0 +1,26 @@
+name: publish
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    name: build and publish Docker image
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+      - name: set current tag var
+        id: currentTag
+        run: echo ::set-output name=tag::${GITHUB_REF##*/v}
+      - name: Build and push Docker images
+        uses: docker/build-push-action@v1
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+          repository: whefter/mod-auth-openidc-forwardauth
+          build_args: MODAUTHOPENIDC_VERSION=${{ steps.currentTag.outputs.tag }}
+          tags: latest,${{ steps.currentTag.outputs.tag }}
+          push: ${{ startsWith(github.ref, 'refs/tags/') }}

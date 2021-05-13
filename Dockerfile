@@ -1,9 +1,10 @@
 FROM httpd
+ARG MODAUTHOPENIDC_VERSION=2.4.6
 
 RUN apt update \
     && apt install -y \
         wget \
-    && wget -O /tmp/package.deb https://github.com/zmartzone/mod_auth_openidc/releases/download/v2.4.6/libapache2-mod-auth-openidc_2.4.6-1.buster+1_amd64.deb \
+    && wget -O /tmp/package.deb https://github.com/zmartzone/mod_auth_openidc/releases/download/v${MODAUTHOPENIDC_VERSION}/libapache2-mod-auth-openidc_${MODAUTHOPENIDC_VERSION}-1.buster+1_amd64.deb \
     && apt install -y /tmp/package.deb \
     && rm /tmp/package.deb \
     && apt remove -y wget \
